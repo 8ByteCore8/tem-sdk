@@ -1,7 +1,6 @@
-from collections.abc import Coroutine
+from collections.abc import Awaitable
 from decimal import ROUND_DOWN, ROUND_UP, Decimal
 from types import TracebackType
-from typing import Any
 
 from httpx import AsyncClient, HTTPError
 
@@ -43,7 +42,7 @@ class TemClient:
         Returns:
             TemClient: The instance of the client.
         """
-        await self.__client__.__aenter__()
+        await self.__client__.__aenter__()  # pyright: ignore[reportUnusedCallResult]
         return self
 
     @staticmethod
@@ -102,7 +101,7 @@ class TemClient:
         exc_type: type[BaseException] | None = None,
         exc_value: BaseException | None = None,
         traceback: TracebackType | None = None,
-    ) -> Coroutine[Any, Any, None]:
+    ) -> Awaitable[None]:
         """
         Exit the asynchronous context manager.
 
@@ -148,9 +147,18 @@ class TemClient:
             Info: The market information.
         """
         response = await self.__client__.get("/info")
-        response.raise_for_status()
+        response.raise_for_status()  # pyright: ignore[reportUnusedCallResult]
+        data = GetMarketInfoResponse.model_validate_json(response.content)
         return Info(
-            **(GetMarketInfoResponse.model_validate_json(response.content)).model_dump()
+            address=data.address,
+            market=data.market,
+            price=data.price,
+            order=data.order,
+            pool=data.pool,
+            credit=data.credit,
+            referral=data.referral,
+            reward=data.reward,
+            tron=data.tron,
         )
 
     async def get_balance(self, account: str) -> Decimal:
@@ -164,7 +172,7 @@ class TemClient:
             Decimal: The account balance in SUN.
         """
         response = await self.__client__.get("/credit", params={"address": account})
-        response.raise_for_status()
+        response.raise_for_status()  # pyright: ignore[reportUnusedCallResult]
         return GetBalanceResponse.model_validate_json(response.content).value
 
     async def deposit_balance(
@@ -189,7 +197,7 @@ class TemClient:
                 signed_tx=signed_tx,
             ).model_dump(mode="json", exclude_none=True, exclude_unset=True),
         )
-        response.raise_for_status()
+        response.raise_for_status()  # pyright: ignore[reportUnusedCallResult]
 
     async def withdraw_balance(
         self,
@@ -216,7 +224,7 @@ class TemClient:
                 signed_ms=signed_ms,
             ).model_dump(mode="json", exclude_none=True, exclude_unset=True),
         )
-        response.raise_for_status()
+        response.raise_for_status()  # pyright: ignore[reportUnusedCallResult]
 
     async def get_orders(
         self,
@@ -248,7 +256,7 @@ class TemClient:
             params["address"] = account
 
         response = await self.__client__.get("/order/list", params=params)
-        response.raise_for_status()
+        response.raise_for_status()  # pyright: ignore[reportUnusedCallResult]
         return GetOrdersResponse.model_validate_json(response.content).orders
 
     async def get_all_orders(
@@ -267,7 +275,7 @@ class TemClient:
         Returns:
             list[Order]: The list of all orders.
         """
-        orders = set()
+        orders: set[Order] = set()
         skip = 0
         take = 1000
 
@@ -300,10 +308,29 @@ class TemClient:
         }
 
         response = await self.__client__.get("/order/info", params=params)
-        print(response.url)
-        response.raise_for_status()
+        response.raise_for_status()  # pyright: ignore[reportUnusedCallResult]
+        data = GetOrderResponse.model_validate_json(response.content)
         return Order(
-            **(GetOrderResponse.model_validate_json(response.content).model_dump())
+            id=data.id,
+            type=data.type,
+            market=data.market,
+            origin=data.origin,
+            target=data.target,
+            price=data.price,
+            amount=data.amount,
+            freeze=data.freeze,
+            frozen=data.frozen,
+            resource=data.resource,
+            locked=data.locked,
+            duration=data.duration,
+            payment=data.payment,
+            partfill=data.partfill,
+            extend=data.extend,
+            maxlock=data.maxlock,
+            status=data.status,
+            archive=data.archive,
+            created_at=data.created_at,
+            updated_at=data.updated_at,
         )
 
     async def create_order(
@@ -316,6 +343,8 @@ class TemClient:
         duration: Decimal | int,
         price: Decimal | int,
         partfill: bool = True,
+        instant: bool | None = None,
+        listed: bool | None = None,
         api_key: str | None = None,
         signed_ms: SignedMS | None = None,
         signed_tx: str | None = None,
@@ -342,23 +371,27 @@ class TemClient:
         Notes:
             The `payment` field sent to the API is computed from `price`, `amount`, and `duration`.
         """
+        amount = Decimal(amount)
         response = await self.__client__.post(
             "/order/new",
             json=CreateOrderRequest(
                 market=market,
                 address=account,
                 target=target,
+                amount=amount,
                 payment=self.calculate_order_payment(price, amount, duration),
                 resource=resource,
                 price=Decimal(price),
                 duration=Decimal(duration),
                 partfill=partfill,
+                instant=instant,
+                listed=listed,
                 api_key=api_key,
                 signed_ms=signed_ms,
                 signed_tx=signed_tx,
-            ).model_dump(mode="json"),
+            ).model_dump(mode="json", exclude_none=True),
         )
-        response.raise_for_status()
+        response.raise_for_status()  # pyright: ignore[reportUnusedCallResult]
         return CreateOrderResponse.model_validate_json(response.content).order_id
 
     async def fill_order(
@@ -389,7 +422,7 @@ class TemClient:
                 origin_address=target,
             ).model_dump(mode="json", exclude_none=True, exclude_unset=True),
         )
-        response.raise_for_status()
+        response.raise_for_status()  # pyright: ignore[reportUnusedCallResult]
 
     async def cancel_order(
         self, order_id: int, account: str, signed_ms: SignedMS
@@ -413,7 +446,7 @@ class TemClient:
                 signed_ms=signed_ms,
             ).model_dump(mode="json", exclude_none=True, exclude_unset=True),
         )
-        response.raise_for_status()
+        response.raise_for_status()  # pyright: ignore[reportUnusedCallResult]
 
     # No info about this method
     # async def reclaim_order(session: ClientSession, payload: CancelOrder):

@@ -99,6 +99,8 @@ class CreateOrderRequest(BaseModel):
     """Sender of TRX"""
     target: str | list[str] = Field(...)
     """Rent target"""
+    amount: Decimal = Field(..., decimal_places=0)
+    """Rent amount"""
     payment: Decimal = Field(..., decimal_places=0)
     """Payment in sun"""
     resource: Resource = Field(...)
@@ -109,6 +111,10 @@ class CreateOrderRequest(BaseModel):
     """Rent price"""
     partfill: bool = Field(...)
     """Allow partial order execution"""
+    instant: bool | None = Field(None)
+    """Instant order execution"""
+    listed: bool | None = Field(None)
+    """Public order visibility"""
     api_key: str | None = Field(None)
     """User API key"""
     signed_ms: SignedMS | None = Field(None)
@@ -146,8 +152,7 @@ class CreateOrderRequest(BaseModel):
         """
         if isinstance(self.target, str):
             return self
-
-        if isinstance(self.target, list):
+        if isinstance(self.target, list):  # pyright: ignore[reportUnnecessaryIsInstance]
             if len(self.target) == 1:
                 self.target = self.target[0]
                 return self
