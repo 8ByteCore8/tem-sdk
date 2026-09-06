@@ -99,15 +99,13 @@ class CreateOrderRequest(BaseModel):
     """Sender of TRX"""
     target: str | list[str] = Field(...)
     """Rent target"""
-    amount: Decimal = Field(..., decimal_places=0)
+    amount: int = Field(...)
     """Rent amount"""
-    payment: Decimal = Field(..., decimal_places=0)
-    """Payment in sun"""
     resource: Resource = Field(...)
     """Rented resource"""
-    duration: Decimal = Field(..., decimal_places=0)
+    duration: int = Field(...)
     """Rent duration"""
-    price: Decimal = Field(..., decimal_places=0)
+    price: int = Field(...)
     """Rent price"""
     partfill: bool = Field(...)
     """Allow partial order execution"""

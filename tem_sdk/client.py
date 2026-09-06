@@ -371,18 +371,16 @@ class TemClient:
         Notes:
             The `payment` field sent to the API is computed from `price`, `amount`, and `duration`.
         """
-        amount = Decimal(amount)
         response = await self.__client__.post(
             "/order/new",
             json=CreateOrderRequest(
                 market=market,
                 address=account,
                 target=target,
-                amount=amount,
-                payment=self.calculate_order_payment(price, amount, duration),
+                amount=int(amount),
                 resource=resource,
-                price=Decimal(price),
-                duration=Decimal(duration),
+                price=int(price),
+                duration=int(duration),
                 partfill=partfill,
                 instant=instant,
                 listed=listed,
